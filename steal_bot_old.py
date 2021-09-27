@@ -1,3 +1,4 @@
+"steal bot"
 from model.decisions.use_item_decision import UseItemDecision
 from model.tile_map import TileMap
 from networking.io import Logger
@@ -23,9 +24,6 @@ import random
 logger = Logger()
 constants = Constants()
 
-#hit_list = {'cws', 'd4v1durs0c001', 'gaongthstroeia', 'cifilis', 'donodub', 'cantcode', 'chickenman', 'Random', 'uhhhh', 'linguine', 'bee-do-bee-do-bee-do'}
-hit_list = {'cantcode', 'chickenman', 'cifilis', 'cws', 'grapebot', 'venkat', 'gemini2'}
-potato_pos = Position(constants.BOARD_WIDTH // 2 - 4, 3)
 
 def first_moves(game: Game):
     state = game.get_game_state()
@@ -35,25 +33,25 @@ def first_moves(game: Game):
     if state.turn == 1:
         return MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
     elif state.turn == 2:
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 3:
         # Potato grew 1
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 4:
         # Potato grew 2
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 5:
         # Potato grew 3
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 6:
         # Potato grew 4
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 7:
         # Potato grew 4
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     elif state.turn == 8:
         # Potato grew 4
-        return MoveDecision(potato_pos)
+        return MoveDecision(Position(constants.BOARD_WIDTH // 2, 3))
     else: # turn_counter == 7:
         return MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
 
@@ -66,10 +64,10 @@ def first_actions(game: Game):
     if state.turn == 1:
         return BuyDecision([CropType.POTATO], [1])
     elif state.turn == 2:
-        return PlantDecision([CropType.POTATO], [potato_pos])
+        return PlantDecision([CropType.POTATO], [Position(constants.BOARD_WIDTH // 2, 3)])
     elif state.turn == 3:
         # Potato grew 1
-        return UseItemDecision()
+        return DoNothingDecision()
     elif state.turn == 4:
         # Potato grew 2
         return DoNothingDecision()
@@ -84,7 +82,7 @@ def first_actions(game: Game):
         return DoNothingDecision()
     elif state.turn == 8:
         # Potato grew 4
-        return HarvestDecision([potato_pos])
+        return HarvestDecision([Position(constants.BOARD_WIDTH // 2, 3)])
     else:  # turn_counter == 7:
         return DoNothingDecision()
 
@@ -103,7 +101,7 @@ def move_from_to(start: Position, end: Position):
     y = start.y
     if abs(end.x - start.x) <= moves_left:
         x = end.x
-        moves_left -= abs(end.x - start.x)
+        moves_left -= (end.x - start.x)
     else:
         if end.x > start.x:
             x = start.x + moves_left
@@ -152,7 +150,7 @@ def get_move_decision(game: Game) -> MoveDecision:
     game_state: GameState = game.get_game_state()
     logger.debug(f"[Turn {game_state.turn}] Feedback received from engine: {game_state.feedback}")
 
-    if game_state.turn < 10 and game_state.get_opponent_player().name in hit_list:
+    if game_state.turn < 10 and (game_state.get_opponent_player().name == 'cws' or game_state.get_opponent_player().name == 'd4v1durs0c001' or game_state.get_opponent_player().name == 'gaongthstroeia'):
         return first_moves(game)
 
     # Select your decision here!
@@ -220,7 +218,7 @@ def get_action_decision(game: Game) -> ActionDecision:
     game_state: GameState = game.get_game_state()
     logger.debug(f"[Turn {game_state.turn}] Feedback received from engine: {game_state.feedback}")
 
-    if game_state.turn < 10 and game_state.get_opponent_player().name in hit_list:
+    if game_state.turn < 10 and (game_state.get_opponent_player().name == 'cws' or game_state.get_opponent_player().name == 'd4v1durs0c001' or game_state.get_opponent_player().name == 'gaongthstroeia'):
         return first_actions(game)
 
     # Select your decision here!

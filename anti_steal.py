@@ -1,5 +1,4 @@
 from model.decisions.use_item_decision import UseItemDecision
-from model.tile_map import TileMap
 from networking.io import Logger
 from game import Game
 from api import game_util
@@ -17,88 +16,17 @@ from model.upgrade_type import UpgradeType
 from model.game_state import GameState
 from model.player import Player
 from api.constants import Constants
+from model.tile_map import TileMap
 
 import random
 
 logger = Logger()
 constants = Constants()
 
-#hit_list = {'cws', 'd4v1durs0c001', 'gaongthstroeia', 'cifilis', 'donodub', 'cantcode', 'chickenman', 'Random', 'uhhhh', 'linguine', 'bee-do-bee-do-bee-do'}
-hit_list = {'cantcode', 'chickenman', 'cifilis', 'cws', 'grapebot', 'venkat', 'gemini2'}
-potato_pos = Position(constants.BOARD_WIDTH // 2 - 4, 3)
-
-def first_moves(game: Game):
-    state = game.get_game_state()
-    player = state.get_my_player()
-    pos = player.position
-
-    if state.turn == 1:
-        return MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
-    elif state.turn == 2:
-        return MoveDecision(potato_pos)
-    elif state.turn == 3:
-        # Potato grew 1
-        return MoveDecision(potato_pos)
-    elif state.turn == 4:
-        # Potato grew 2
-        return MoveDecision(potato_pos)
-    elif state.turn == 5:
-        # Potato grew 3
-        return MoveDecision(potato_pos)
-    elif state.turn == 6:
-        # Potato grew 4
-        return MoveDecision(potato_pos)
-    elif state.turn == 7:
-        # Potato grew 4
-        return MoveDecision(potato_pos)
-    elif state.turn == 8:
-        # Potato grew 4
-        return MoveDecision(potato_pos)
-    else: # turn_counter == 7:
-        return MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
-
-
-def first_actions(game: Game):
-    state = game.get_game_state()
-    player = state.get_my_player()
-    pos = player.position
-
-    if state.turn == 1:
-        return BuyDecision([CropType.POTATO], [1])
-    elif state.turn == 2:
-        return PlantDecision([CropType.POTATO], [potato_pos])
-    elif state.turn == 3:
-        # Potato grew 1
-        return UseItemDecision()
-    elif state.turn == 4:
-        # Potato grew 2
-        return DoNothingDecision()
-    elif state.turn == 5:
-        # Potato grew 3
-        return DoNothingDecision()
-    elif state.turn == 6:
-        # Potato grew 3
-        return DoNothingDecision()
-    elif state.turn == 7:
-        # Potato grew 3
-        return DoNothingDecision()
-    elif state.turn == 8:
-        # Potato grew 4
-        return HarvestDecision([potato_pos])
-    else:  # turn_counter == 7:
-        return DoNothingDecision()
-
-
-def get_crop_tile(pos: Position, tile_map: TileMap) -> Position:
-    for x in range(tile_map.map_width):
-        for y in range(tile_map.map_height):
-            if tile_map.get_tile(x, y).crop.value > 0:
-                return Position(x, y)
-
-    return pos
+has_planted_before = False
 
 def move_from_to(start: Position, end: Position):
-    moves_left = constants.MAX_MOVEMENT
+    moves_left = 20
     x = start.x
     y = start.y
     if abs(end.x - start.x) <= moves_left:
@@ -126,13 +54,94 @@ def move_from_to(start: Position, end: Position):
 
     return MoveDecision(Position(x, y))
 
+
+def get_crop_tile(pos: Position, tile_map: TileMap) -> Position:
+    for x in range(tile_map.map_width):
+        for y in range(tile_map.map_height):
+            if tile_map.get_tile(x, y).crop.value > 0 and tile_map.get_tile(x, y).scarecrow_effect is not None:
+                return Position(x, y)
+
+    return None
+
+
+def opponent_has_planted(pos: Position, tile_map: TileMap) -> bool:
+    for x in range(tile_map.map_width):
+        for y in range(tile_map.map_height):
+            if tile_map.get_tile(x, y).crop.value > 0:
+                return True
+
+    return False
+
+
 def scarecrow_pos(tile_map: TileMap):
     for x in range(tile_map.map_width):
         for y in range(tile_map.map_height):
             if tile_map.get_tile(x, y).scarecrow_effect is not None:
                 return Position(x, y)
 
-    return Position(-1, -1)
+    return None
+
+
+def first_moves(game: Game) -> MoveDecision:
+    game_state: GameState = game.get_game_state()
+    my_player: Player = game_state.get_my_player()
+    pos: Position = my_player.position
+
+    decisions = [move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT))),
+                 MoveDecision(Position(pos.x - 5, pos.y + 15)),
+                 MoveDecision(Position(pos.x, pos.y + 15)),
+                 MoveDecision(pos),
+                 MoveDecision(Position(pos.x + 5, pos.y + 15)),
+                 MoveDecision(Position(pos.x + 10, pos.y)),
+                 MoveDecision(Position(pos.x + 2, pos.y + 1)),
+                 MoveDecision(pos),
+                 MoveDecision(pos),
+                 MoveDecision(Position(pos.x - 13, pos.y - 7)),
+                 MoveDecision(Position(pos.x - 4, pos.y - 16)),
+                 MoveDecision(pos),
+                 MoveDecision(pos),
+                 MoveDecision(pos),
+                 MoveDecision(pos),
+                 MoveDecision(pos),
+                 move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))]
+
+    return decisions[game_state.turn - 70]
+
+
+def first_actions(game: Game) -> ActionDecision:
+    game_state: GameState = game.get_game_state()
+    my_player: Player = game_state.get_my_player()
+    pos: Position = my_player.position
+
+    actions = [DoNothingDecision(),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               BuyDecision([CropType.DUCHAM_FRUIT, CropType.POTATO], [2, 3]),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               PlantDecision([CropType.POTATO], [pos]),
+               PlantDecision([CropType.POTATO], [pos]),
+               PlantDecision([CropType.POTATO], [pos]),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               PlantDecision([CropType.DUCHAM_FRUIT, CropType.DUCHAM_FRUIT], [pos, Position(pos.x, pos.y + 1)]),
+               UseItemDecision(pos),
+               DoNothingDecision(),
+               DoNothingDecision(),
+               HarvestDecision([pos, Position(pos.x, pos.y + 1)]),
+               HarvestDecision([pos, Position(pos.x, pos.y + 1)]),
+               HarvestDecision([pos, Position(pos.x, pos.y + 1)])]
+
+    return actions[game_state.turn - 70]
 
 
 def get_move_decision(game: Game) -> MoveDecision:
@@ -152,52 +161,41 @@ def get_move_decision(game: Game) -> MoveDecision:
     game_state: GameState = game.get_game_state()
     logger.debug(f"[Turn {game_state.turn}] Feedback received from engine: {game_state.feedback}")
 
-    if game_state.turn < 10 and game_state.get_opponent_player().name in hit_list:
-        return first_moves(game)
-
     # Select your decision here!
     my_player: Player = game_state.get_my_player()
     pos: Position = my_player.position
     logger.info(f"Currently at {my_player.position}")
 
-    spos = scarecrow_pos(game_state.tile_map)
-    if (spos.x > 0 or spos.y > 0) and not my_player.used_item:
-        return move_from_to(pos, spos)
+    global has_planted_before
+
+    if game_state.turn < 70 and not has_planted_before:
+        has_planted_before = opponent_has_planted(pos, game_state.tile_map)
+
+    if game_state.turn < 70:
+        if get_crop_tile(pos, game_state.tile_map) is not None:
+            logger.debug("Moving towards crops")
+            decision = move_from_to(pos, get_crop_tile(pos, game_state.tile_map))
+
+        else:
+            target_pos = game_state.get_opponent_player().position
+            decision = move_from_to(pos, target_pos)
+
+        return decision
+
+    elif game_state.turn < 92 and not has_planted_before and game_state.get_opponent_player().money >= my_player.money:
+        return first_moves(game)
 
     # If we have something to sell that we harvested, then try to move towards the green grocer tiles
-    # if random.random() < 0.5 and \
-    #         (sum(my_player.seed_inventory.values()) == 0 or
-    #          len(my_player.harvested_inventory)):
-    #     logger.debug("Moving towards green grocer")
-    #     decision = MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
-    # # If not, then move randomly within the range of locations we can move to
-    # else:
-    #     pos = random.choice(game_util.within_move_range(game_state, my_player.name))
-    #     logger.debug("Moving randomly")
-    #     decision = MoveDecision(pos)
+    if len(my_player.harvested_inventory) > 1:
+        logger.debug("Moving towards green grocer")
+        decision = move_from_to(pos, Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
+    elif get_crop_tile(pos, game_state.tile_map) is not None:
+        logger.debug("Moving towards crops")
+        decision = move_from_to(pos, get_crop_tile(pos, game_state.tile_map))
 
-    # If we have items, go sell them
-    if len(my_player.harvested_inventory) > 5:
-        decision = MoveDecision(Position(constants.BOARD_WIDTH // 2, max(0, pos.y - constants.MAX_MOVEMENT)))
     else:
-    # Go towards nearest crop
-        target_pos = get_crop_tile(pos, game_state.tile_map)
-        if target_pos.x == pos.x and target_pos.y == pos.y:
-            target_pos = game_state.get_opponent_player().position
+        target_pos = game_state.get_opponent_player().position
         decision = move_from_to(pos, target_pos)
-        # x_dir = 0
-        # y_dir = 0
-        # if target_pos.x > pos.x:
-        #     x_dir = 1
-        # else:
-        #     x_dir = -1
-        # if target_pos.y > pos.y:
-        #     y_dir = 1
-        # else:
-        #     y_dir = -1
-        #
-        # decision = MoveDecision(Position(min(target_pos.x, x_dir * constants.MAX_MOVEMENT // 2 + pos.x), min(target_pos.y, y_dir * constants.MAX_MOVEMENT // 2 + pos.y)))
-
 
     logger.debug(f"[Turn {game_state.turn}] Sending MoveDecision: {decision}")
     return decision
@@ -216,20 +214,15 @@ def get_action_decision(game: Game) -> ActionDecision:
     :param: game The object that contains the game state and other related information
     :returns: ActionDecision A decision for the bot to make this turn
     """
-
     game_state: GameState = game.get_game_state()
     logger.debug(f"[Turn {game_state.turn}] Feedback received from engine: {game_state.feedback}")
-
-    if game_state.turn < 10 and game_state.get_opponent_player().name in hit_list:
-        return first_actions(game)
 
     # Select your decision here!
     my_player: Player = game_state.get_my_player()
     pos: Position = my_player.position
 
-    spos = scarecrow_pos(game_state.tile_map)
-    if (spos.x > 0 or spos.y > 0) and spos.x == pos.x and not my_player.used_item and pos.y == spos.y:
-        return UseItemDecision()
+    if 70 <= game_state.turn < 92 and not has_planted_before and game_state.get_opponent_player().money >= my_player.money:
+        return first_actions(game)
 
     # Let the crop of focus be the one we have a seed for, if not just choose a random crop
     crop = max(my_player.seed_inventory, key=my_player.seed_inventory.get) \
@@ -242,7 +235,7 @@ def get_action_decision(game: Game) -> ActionDecision:
         if game_state.tile_map.get_tile(harvest_pos.x, harvest_pos.y).crop.value > 0:
             possible_harvest_locations.append(harvest_pos)
 
-    logger.debug(f"Possible harvest locations={possible_harvest_locations}")
+    # logger.debug(f"Possible harvest locations={possible_harvest_locations}")
 
     # If we can harvest something, try to harvest it
     if len(possible_harvest_locations) > 0:
@@ -253,13 +246,13 @@ def get_action_decision(game: Game) -> ActionDecision:
     #         game_state.tile_map.get_tile(pos.x, pos.y).type.value >= TileType.F_BAND_OUTER.value:
     #     logger.debug(f"Deciding to try to plant at position {pos}")
     #     decision = PlantDecision([crop], [pos])
-    # # If we don't have that seed, but we have the money to buy it, then move towards the
-    # # green grocer to buy it
+    # If we don't have that seed, but we have the money to buy it, then move towards the
+    # green grocer to buy it
     # elif my_player.money >= crop.get_seed_price() and \
-    #     game_state.tile_map.get_tile(pos.x, pos.y).type == TileType.GREEN_GROCER:
+    #         game_state.tile_map.get_tile(pos.x, pos.y).type == TileType.GREEN_GROCER:
     #     logger.debug(f"Buy 1 of {crop}")
     #     decision = BuyDecision([crop], [1])
-    # If we can't do any of that, then just do nothing (move around some more)
+    # # If we can't do any of that, then just do nothing (move around some more)
     else:
         logger.debug(f"Couldn't find anything to do, waiting for move step")
         decision = DoNothingDecision()
@@ -268,11 +261,15 @@ def get_action_decision(game: Game) -> ActionDecision:
     return decision
 
 
+# 1. Check opponent crops (if we can take them take them)
+# 2. Chase other guy if in lead
+# 3. Create DUCHAM_FRUIT nest
+
 def main():
     """
     Competitor TODO: choose an item and upgrade for your bot
     """
-    game = Game(ItemType.SCARECROW, UpgradeType.LONGER_LEGS)
+    game = Game(ItemType.RAIN_TOTEM, UpgradeType.LONGER_LEGS)
 
     while (True):
         try:
